@@ -1,1 +1,1 @@
-### My personal blog: http://sh44di.me/
+### My personal blog: https://sh44di.me/
