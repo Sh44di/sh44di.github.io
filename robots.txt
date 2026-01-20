@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Sitemap: https://sh44di.me/sitemap.xml
+Host: sh44di.me
