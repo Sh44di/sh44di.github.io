@@ -79,6 +79,15 @@
     line-height: 1.8;
 }
 
+.post-body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: var(--spacing-md) auto;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+}
+
 .post-section {
     margin-bottom: var(--spacing-lg);
 }

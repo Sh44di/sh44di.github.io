@@ -480,6 +480,20 @@ code {
     font-size: 0.9rem;
 }
 
+.lang-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: var(--spacing-xs);
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
 .post-separator {
     height: 1px;
     background: var(--border-color);
@@ -522,13 +536,21 @@ code {
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     :root {
+        --nav-height: 90px;
         --spacing-md: 1.5rem;
         --spacing-lg: 2rem;
         --spacing-xl: 2.5rem;
     }
     
+    .navbar {
+        height: auto;
+        padding: var(--spacing-xs) 0;
+    }
+    
     .nav-container {
         padding: 0 var(--spacing-sm);
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
     }
     
     .nav-brand {
@@ -536,7 +558,10 @@ code {
     }
     
     .nav-menu {
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
     
     .nav-link {
@@ -554,6 +579,14 @@ code {
     .avatar-img {
         width: 150px;
         height: 150px;
+    }
+    
+    .hero-container {
+        padding-top: var(--spacing-lg);
+    }
+    
+    .container {
+        padding: 0 var(--spacing-sm);
     }
     
     .section-title {
